@@ -3,6 +3,8 @@ package com.desafio.ftrack.orderproducer.controllers;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import javax.validation.Valid;
+
 import com.desafio.ftrack.orderproducer.repositories.OrderRepository;
 import com.desafio.ftrack.orderproducer.services.ProducerService;
 import com.desafio.ftrack.orderproducer.types.Order;
@@ -36,7 +38,7 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<Order> create(@RequestBody OrderVO request){
+    public ResponseEntity<Order> create(@RequestBody @Valid OrderVO request){
         Order order = orderRepo.save(request.createFromVO());
         producer.send(order);
         return ResponseEntity.created(null).body(order);
@@ -63,12 +65,13 @@ public class OrderController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Order> update(@PathVariable Long id, @RequestBody OrderVO request){
+    public ResponseEntity<Order> update(@PathVariable Long id, @RequestBody @Valid OrderVO request){
         Order order = request.createFromVO();
         if(!orderRepo.findById(id).isPresent())
             return ResponseEntity.notFound().build();
         order.setId(id);
         order = orderRepo.save(order);
+        producer.send(order);
         return ResponseEntity.ok(order);
     }
 
