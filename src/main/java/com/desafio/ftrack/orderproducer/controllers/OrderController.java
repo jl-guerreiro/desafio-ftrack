@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import com.desafio.ftrack.orderproducer.repositories.OrderRepository;
+import com.desafio.ftrack.orderproducer.services.ProducerService;
 import com.desafio.ftrack.orderproducer.types.Order;
+import com.desafio.ftrack.orderproducer.types.OrderVO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -23,21 +26,28 @@ public class OrderController {
 
     @Autowired
     OrderRepository orderRepo;
+
+    @Autowired
+    ProducerService producer;
     
     @GetMapping
-    public ResponseEntity<List<Order>> list(){
-        orderRepo.findAll();
-        return null;
+    public ResponseEntity<Iterable<Order>> list(){
+        return ResponseEntity.ok(orderRepo.findAll());
     }
 
     @PostMapping
-    public ResponseEntity<Order> create(@RequestBody Order request){
-        Order order = orderRepo.save(request);
+    public ResponseEntity<Order> create(@RequestBody OrderVO request){
+        Order order = orderRepo.save(request.createFromVO());
+        producer.send(order);
         return ResponseEntity.created(null).body(order);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Order>> search(){
+    public ResponseEntity<List<Order>> search(@RequestParam(required = false) Double max_total,
+                                              @RequestParam(required = false) Double min_total,
+                                              @RequestParam(required = false) String q){
+        if(min_total==null) min_total = 0d;
+        if(max_total==null) max_total = Double.MAX_VALUE;
         return null;
     }
 
@@ -53,11 +63,12 @@ public class OrderController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Order> update(@PathVariable Long id, @RequestBody Order request){
-        request.setId(id);
+    public ResponseEntity<Order> update(@PathVariable Long id, @RequestBody OrderVO request){
+        Order order = request.createFromVO();
         if(!orderRepo.findById(id).isPresent())
             return ResponseEntity.notFound().build();
-        Order order = orderRepo.save(request);
+        order.setId(id);
+        order = orderRepo.save(order);
         return ResponseEntity.ok(order);
     }
 
