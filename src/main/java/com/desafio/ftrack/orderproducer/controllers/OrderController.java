@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 import javax.validation.Valid;
 
 import com.desafio.ftrack.orderproducer.repositories.OrderRepository;
+import com.desafio.ftrack.orderproducer.services.OrderService;
 import com.desafio.ftrack.orderproducer.services.ProducerService;
 import com.desafio.ftrack.orderproducer.types.Order;
 import com.desafio.ftrack.orderproducer.types.OrderVO;
@@ -31,6 +32,9 @@ public class OrderController {
 
     @Autowired
     ProducerService producer;
+
+    @Autowired 
+    OrderService orderSvc;
     
     @GetMapping
     public ResponseEntity<Iterable<Order>> list(){
@@ -45,12 +49,15 @@ public class OrderController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Order>> search(@RequestParam(required = false) Double max_total,
-                                              @RequestParam(required = false) Double min_total,
-                                              @RequestParam(required = false) String q){
-        if(min_total==null) min_total = 0d;
-        if(max_total==null) max_total = Double.MAX_VALUE;
-        return null;
+    public ResponseEntity<List<Order>> search(@RequestParam(required = false, name = "max_total") Double maxTotal,
+                                              @RequestParam(required = false, name = "min_total") Double minTotal,
+                                              @RequestParam(required = false, name = "q") String query){
+        List<Order> list = orderSvc.search(query, minTotal, maxTotal);
+        if(list.size()>0){
+            return ResponseEntity.ok(list);
+        }else{
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/{id}")
